@@ -67,7 +67,7 @@ final_init:
   ld [rNR52], a
 
   ; Turn screen on, display background
-  ld a, LCDCF_ON | LCDCF_BGON
+  ld a, LCDCF_ON | LCDCF_BGON | LCDCF_BG8000
   ld [rLCDC], a
 
   ret

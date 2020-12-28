@@ -32,7 +32,7 @@ main:
   ld de, read_joypad
   call int_set_joypad_de
 
-  call init_set_cursor
+;  call init_set_cursor
 
   ld de, button_a_f
   ld hl, a_cb
@@ -335,7 +335,7 @@ hello_world:
   db "     X                          "
   db "\n"
   db " AVCD                           "
-  db "Eat the rich                    "
+  db "                                "
   db "Nutritious                      "
   db "Vital sustainence               "
   db "Hold it!                        "

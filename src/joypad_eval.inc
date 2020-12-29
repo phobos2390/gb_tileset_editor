@@ -63,7 +63,7 @@ eval_joypad:
       ld a, h
       or l
       jp z, .button_a_f_not_defined
-        call unique_call_hl
+        CALL_HL
 .button_a_f_not_defined:        
     pop hl
 .eval_b:
@@ -77,7 +77,7 @@ eval_joypad:
       ld a, h
       or l
       jp z, .button_b_f_not_defined
-        call unique_call_hl
+        CALL_HL
 .button_b_f_not_defined:
     pop hl
 .eval_select:
@@ -91,7 +91,7 @@ eval_joypad:
       ld a, h
       or l
       jp z, .button_select_f_not_defined
-        call unique_call_hl
+        CALL_HL
 .button_select_f_not_defined:
     pop hl
 .eval_start:
@@ -105,7 +105,7 @@ eval_joypad:
       ld a, h
       or l
       jp z, .button_start_f_not_defined
-        call unique_call_hl
+        CALL_HL
 .button_start_f_not_defined:
     pop hl
 .eval_up:
@@ -119,7 +119,7 @@ eval_joypad:
       ld a, h
       or l
       jp z, .pad_up_f_not_defined
-        call unique_call_hl
+        CALL_HL
 .pad_up_f_not_defined:
     pop hl
 .eval_down:
@@ -133,7 +133,7 @@ eval_joypad:
       ld a, h
       or l
       jp z, .pad_down_f_not_defined
-        call unique_call_hl
+        CALL_HL
 .pad_down_f_not_defined:
     pop hl
 .eval_right:
@@ -147,7 +147,7 @@ eval_joypad:
       ld a, h
       or l
       jp z, .pad_right_f_not_defined
-        call unique_call_hl
+        CALL_HL
 .pad_right_f_not_defined:
     pop hl
 .eval_left:
@@ -161,7 +161,7 @@ eval_joypad:
       ld a, h
       or l
       jp z, .pad_left_f_not_defined
-        call unique_call_hl
+        CALL_HL
 .pad_left_f_not_defined:
     pop hl
 .eval_end:

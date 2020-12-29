@@ -74,6 +74,22 @@ memcopy_fast:: ; hl and de must be incremented at the end of this
 
     ret
 
+SECTION "Memcpy_hram",ROM0
+
+;-------------------------------------------------------------------------------
+;- memcopy_hram()    b = size    hl = source address    c = dest address      -
+;-------------------------------------------------------------------------------
+
+memcopy_hram:: ; hl and de must be incremented at the end of this
+
+    ld      a,[hl+]
+    ldh     [c],a
+    inc     c
+    dec     b
+    jr      nz,memcopy_hram
+
+    ret
+
 SECTION "Memcpy_inc",ROM0
 
 ;-------------------------------------------------------------------------------

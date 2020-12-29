@@ -6,15 +6,7 @@ INCLUDE "constants.inc"
 INCLUDE "interrupt_vectors.inc"
 INCLUDE "vram_utils.inc"
 INCLUDE "joypad_eval.inc"
-
-SECTION "headers", ROM0[$100]
-EntryPoint:
-  di
-  jp main
-
-REPT $150 - $104
-    db 0
-ENDR
+INCLUDE "oam_utils.inc"
 
 SECTION "Game code", ROM0
 main:
@@ -32,24 +24,25 @@ main:
   ld de, read_joypad
   call int_set_joypad_de
 
-;  call init_set_cursor
+  call init_sprite_table
+  call init_set_cursor
+  
+  call default_dpad_callback_init
+  call default_button_callback_init
 
-  ld de, button_a_f
-  ld hl, a_cb
-  call ld_ide_hl
+  call final_init
+  ei
+.lockup
+  halt
+  jp .lockup
 
-  ld de, button_b_f
-  ld hl, b_cb
-  call ld_ide_hl
+  halt
+  halt
 
-  ld de, button_select_f
-  ld hl, select_cb
-  call ld_ide_hl
+BG_log_location EQU _SCRN0 + ($20 * $11)
 
-  ld de, button_start_f
-  ld hl, start_cb
-  call ld_ide_hl
-
+SECTION "default dpad callback init", ROM0
+default_dpad_callback_init:
   ld de, pad_up_f
   ld hl, up_cb
   call ld_ide_hl
@@ -65,19 +58,26 @@ main:
   ld de, pad_right_f
   ld hl, right_cb
   call ld_ide_hl
+  ret
 
-  call final_init
-  ei
-.lockup
-  halt
-  jp .lockup
+SECTION "default button callback init", ROM0
+default_button_callback_init:
+  ld de, button_a_f
+  ld hl, a_cb
+  call ld_ide_hl
 
-  halt
-  halt
+  ld de, button_b_f
+  ld hl, b_cb
+  call ld_ide_hl
 
-BG_log_location EQU _SCRN0 + ($20 * $11)
+  ld de, button_select_f
+  ld hl, select_cb
+  call ld_ide_hl
 
-
+  ld de, button_start_f
+  ld hl, start_cb
+  call ld_ide_hl
+  ret
 
 SECTION "up callback", ROM0
 up_cb:
@@ -184,6 +184,31 @@ timer_cb:
   call read_joypad
   call eval_joypad
   call increment_timer_cb
+  call update_sprite_character
+  call dma_update_sprites
+  ret
+
+SECTION "Sprite character", WRAM0
+sprite_0_character: DS 1
+
+SECTION "Update sprite character", ROM0
+update_sprite_character:
+  ld a, [sprite_0_character]
+  inc a
+  cp $7
+  jp c, .store_a
+    ld a, $4
+.store_a:
+  ld [sprite_0_character], a
+  push bc
+    push de
+      ld d, a
+      ld a, $0
+      ld bc, $0810
+      ld e, $0
+      call set_sprite_a
+    pop de
+  pop bc
   ret
 
 SECTION "Increment Character", ROM0
@@ -231,31 +256,19 @@ increment_timer_cb:
 
 SECTION "init cursor", ROM0
 init_set_cursor:
-  push hl
-    push af
-      
-      ld hl, _OAMRAM
-
-      ; Sprite 0 - Y position
-      ld a, $1 
-      ld [hl], a
-
-      ; Sprite 0 - X position
-      inc hl
-      ld a, $1
-      ld [hl], a
-
-      ; Sprite 0 - character
-      inc hl
-      ld a, $4
-      ld [hl], a
-
-      ; Sprite 0 - flags
-      inc hl
-      ld a, $0
-      ld [hl], a
-    pop af
-  pop hl
+  push bc
+    push de
+      ld a, 0
+      ld bc, $2020  ; x - 1
+                    ; y - 1
+      ld de, $0100 ; character - 0x4
+                   ; flag - %00000000
+      call set_sprite_a
+      call dma_update_sprites
+      ld a, $01
+      ld [sprite_0_character], a
+    pop de
+  pop bc
   ret
 
 SECTION "Finalize initialization", ROM0
@@ -263,6 +276,8 @@ final_init:
   ; Init display registers
   ld a, %11100100
   ld [rBGP], a
+  ld [rOBP0], a
+  ld [rOBP1], a
 
   xor a ; ld a, 0
   ld [rSCY], a

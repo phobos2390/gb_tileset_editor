@@ -3,6 +3,57 @@ INTERRUPT_VECTORS_INC SET 1
 
 INCLUDE "joypad_eval.inc"
 
+;-------------------------------------------------------------------------------
+; Reset Vectors
+;-------------------------------------------------------------------------------
+
+SECTION "RST_00",ROM0[$00]
+    ret ; Reserved for the interrupt handler. If an interrupt vector is $0000
+    ; it jumps here when it's triggered and returns.
+
+SECTION "RST_08",ROM0[$08]
+jp      hl ; Reserved for interrupt handler and CALL_HL macro.
+
+SECTION "RST_10",ROM0[$10]
+ret
+
+SECTION "RST_18",ROM0[$18]
+ret
+
+SECTION "RST_20",ROM0[$20]
+ret
+
+SECTION "RST_28",ROM0[$28]
+ret
+
+SECTION "RST_30",ROM0[$30]
+ret
+
+SECTION "RST_38",ROM0[$38]
+jp      reset ; Undefined reads are $FF most times, which corresponds to
+              ; RST $38. It's good practice to put a reset here.
+
+SECTION "reset", ROM0
+reset:
+  jp entrypoint
+
+REPT $150 - $104
+    db 0
+ENDR
+
+SECTION "entrypoint", ROM0[$100]
+entrypoint:
+  di
+  jp main
+
+REPT $150 - $104
+    db 0
+ENDR
+
+;-------------------------------------------------------------------------------
+; Interrupt Vectors
+;-------------------------------------------------------------------------------
+
 SECTION "VBLANK INTERRUPT", ROM0[$40]
 vblank_vector:
   push hl
@@ -32,6 +83,8 @@ joypad0_vector:
   push hl
   ld hl, joypad_f
   jp int_common
+
+;-------------------------------------------------------------------------------
 
 SECTION "Interrupt_logic", ROM0
 int_common:

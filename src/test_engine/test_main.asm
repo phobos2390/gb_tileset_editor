@@ -3,15 +3,7 @@ INCLUDE "vram_utils.inc"
 INCLUDE "test_struct_def.inc"
 INCLUDE "constants.inc"
 INCLUDE "print_utils.inc"
-
-SECTION "headers", ROM0[$100]
-EntryPoint:
-  di
-  jp main
-
-REPT $150 - $104
-    db 0
-ENDR
+INCLUDE "interrupt_vectors.inc"
 
 SECTION "Game code", ROM0
 main:

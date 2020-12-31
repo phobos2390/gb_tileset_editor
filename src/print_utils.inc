@@ -7,6 +7,12 @@ INCLUDE "vram_utils.inc"
 
 SECTION "put string hl at bc", ROM0
 put_string_hl_at_bc:
+  VBLANK_WAIT
+  call put_string_hl_at_bc_in_vblank
+  ret
+
+SECTION "put string hl at bc in vblank", ROM0
+put_string_hl_at_bc_in_vblank:
   push hl
     push de
       push hl
@@ -14,7 +20,6 @@ put_string_hl_at_bc:
         call ld_de_ihl
         call ld_ihl_bc
       pop hl
-      VBLANK_WAIT
       call print_hl
       ld hl, vram_iterator
       call ld_ihl_de
@@ -30,17 +35,16 @@ print_hl:
       call ld_de_ibc
 .loop:
       ld a, [hl]
-      sub $0
+      cp $0
       jp z, .end
-      sub $0a ; '\n'
-      jp nz, .default
-      call ld_ibc_de
-      call print_newline
-      call ld_de_ibc
-      inc hl
-      jp .loop
+        cp "\n" ; $0a ; '\n'
+        jp nz, .default
+          call ld_ibc_de
+          call print_newline
+          call ld_de_ibc
+          inc hl
+          jp .loop
 .default:
-      add a,$0a ; '\n'
       ld [de], a
       inc de
       inc hl

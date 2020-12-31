@@ -42,4 +42,12 @@ clear_screen:
   ret
 
 
+SECTION "init window", ROM0
+init_window:
+  ld a, $7
+  ld [rWX], a
+  ld a, $70
+  ld [rWY], a
+  ret
+
 ENDC ; VRAM_UTILS_INC

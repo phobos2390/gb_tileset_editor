@@ -12,11 +12,18 @@ SECTION "Game code", ROM0
 main:
   call init_display
   call init_font
+  call init_window
   ld de, vram_start
   ld bc, vram_iterator
   call ld_ibc_de
+
   ld hl, hello_world
   call print_hl
+
+  ld hl, window_background_str
+  ld bc, window_layer_start
+  call put_string_hl_at_bc_in_vblank
+
   call init_joypad_table
   call init_callbacks
   ld de, timer_cb
@@ -31,7 +38,9 @@ main:
   call default_button_callback_init
   call set_sprite_move_mode
 
-  
+  ld hl, sprite_mode_str
+  ld bc, mode_log_location
+  call put_string_hl_at_bc_in_vblank
 
   call final_init
   ei
@@ -42,8 +51,9 @@ main:
   halt
   halt
 
-bg_log_location EQU _SCRN0 + ($20 * $10)
-mode_log_location EQU _SCRN0 + ($20 * $11)
+window_layer_start EQU _SCRN1
+bg_log_location EQU _SCRN1 + $21 ;_SCRN0 + ($20 * $10)
+mode_log_location EQU _SCRN1 + $1 + ($20 * $2) ; _SCRN0 + ($20 * $11)
 
 SECTION "default dpad callback init", ROM0
 default_dpad_callback_init:
@@ -165,13 +175,13 @@ SECTION "start callback", ROM0
 start_cb:
   push hl
     push bc
-;      ld hl, button_srt_str
-;      ld bc, bg_log_location
-;      call put_string_hl_at_bc
+      ld hl, button_srt_str
+      ld bc, bg_log_location
+      call put_string_hl_at_bc
 
       ld hl, sprite_mode_str
       ld bc, mode_log_location
-      call put_string_hl_at_bc
+      call put_string_hl_at_bc_in_vblank
 
       call set_sprite_move_mode
     pop bc
@@ -198,7 +208,7 @@ timer_cb:
   ret
 
 SECTION "Joypad callback stats", WRAM0
-joypad_cb_amount_invoked DS 2
+joypad_cb_amount_invoked: DS 2
 
 SECTION "Joypad callback", ROM0
 joypad_cb:
@@ -282,13 +292,13 @@ SECTION "Sprite move start callback", ROM0
 sprite_move_start_cb:
   push hl
     push bc
-;      ld hl, button_srt_str
-;      ld bc, bg_log_location
-;      call put_string_hl_at_bc
+      ld hl, button_srt_str
+      ld bc, bg_log_location
+      call put_string_hl_at_bc
 
       ld hl, default_mode_str
       ld bc, mode_log_location
-      call put_string_hl_at_bc
+      call put_string_hl_at_bc_in_vblank
 
       call default_dpad_callback_init
       call default_button_callback_init
@@ -407,39 +417,6 @@ init_set_cursor:
   pop bc
   ret
 
-SECTION "Finalize initialization", ROM0
-final_init:
-  ; Init display registers
-  ld a, %11100100
-  ld [rBGP], a
-  ld [rOBP0], a
-  ld [rOBP1], a
-
-  xor a ; ld a, 0
-  ld [rSCY], a
-  ld [rSCX], a
-
-  ; Shut sound down
-  ld [rNR52], a
-
-  ; Turn screen on, display background
-  ld a, LCDCF_ON | LCDCF_BGON | LCDCF_OBJON | LCDCF_BG8000
-  ld [rLCDC], a
-
-  ld a, [rTAC]
-  or a, TACF_START ; enable timer
-  ld [rTAC], a
-
-  ld a, [rIE]
-  or a, IEF_HILO
-  or a, IEF_SERIAL
-  or a, IEF_TIMER
-  or a, IEF_LCDC
-  or a, IEF_VBLANK
-  ld [rIE], a
-
-  ret
-
 SECTION "Initialize display", ROM0
 init_display:
 .waitVBlank
@@ -466,12 +443,40 @@ init_font:
   jr nz, .copyFont
   ret
 
+SECTION "Finalize initialization", ROM0
+final_init:
+  ; Init display registers
+  ld a, %11100100
+  ld [rBGP], a
+  ld [rOBP0], a
+  ld [rOBP1], a
+
+  xor a ; ld a, 0
+  ld [rSCY], a
+  ld [rSCX], a
+
+  ; Shut sound down
+  ld [rNR52], a
+
+  ; Turn on screen, background,  bg data       window data, enable window, and sprite, tileset_select
+  ld a, LCDCF_ON | LCDCF_BGON | LCDCF_BG9800 | LCDCF_WIN9C00| LCDCF_WINON | LCDCF_OBJON | LCDCF_BG8000
+  ld [rLCDC], a
+
+  ld a, [rTAC]
+  or a, TACF_START ; enable timer
+  ld [rTAC], a
+
+  ld a, [rIE]
+  or a, IEF_HILO
+  or a, IEF_SERIAL
+  or a, IEF_TIMER
+  or a, IEF_LCDC
+  or a, IEF_VBLANK
+  ld [rIE], a
+
+  ret
+
 SECTION "Font", ROM0
-
-;FontTiles:
-;INCBIN "font.chr"
-;FontTilesEnd:
-
 FontTiles:
 INCLUDE "font_redone.inc"
 INCLUDE "font_other.inc"
@@ -497,6 +502,12 @@ hello_world:
   db "EFGHIJKLMNOPQRSTUVWX            "
   db "YZ_-                            "
   db "                 END           ", $0
+
+window_background_str:
+  db "+==================+\n"
+  db "|                  |\n"
+  db "|                  |\n"
+  db "+==================+\n",$0
 
 button_a_str: db     "A press!      \n", $0
 button_b_str: db     "B press!      \n", $0

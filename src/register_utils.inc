@@ -96,6 +96,69 @@ ENDM
 
 ;-------------------------------------------------------------------------------
 
+ADD_HL_VALUE : MACRO
+  push bc
+    ld bc, \1
+    add hl, bc
+  pop bc
+ENDM
+
+;-------------------------------------------------------------------------------
+
+PUSH_HL_BC_DE : MACRO
+  push hl
+    push bc
+      push de
+ENDM
+
+POP_HL_BC_DE : MACRO
+      pop de
+    pop bc
+  pop hl
+ENDM
+
+PUSH_HL_BC : MACRO
+  push hl
+    push bc
+ENDM
+
+POP_HL_BC : MACRO
+    pop bc
+  pop hl
+ENDM
+
+PUSH_HL_DE : MACRO
+  push hl
+    push de
+ENDM
+
+POP_HL_DE : MACRO
+    pop de
+  pop hl
+ENDM
+
+PUSH_BC_DE : MACRO
+  push bc
+    push de
+ENDM
+
+POP_BC_DE : MACRO
+    pop de
+  pop bc
+ENDM
+
+;-------------------------------------------------------------------------------
+
+; sets value at memory \1 to value \2
+; Params
+; 1 - Address
+; 2 - Value
+LD_A_ADDR_VAL : MACRO
+  ld a, \2
+  ld [\1], a
+ENDM
+
+;-------------------------------------------------------------------------------
 SECTION "LD [bc] de", ROM0
 ; ld [bc], de
 ld_ibc_de:

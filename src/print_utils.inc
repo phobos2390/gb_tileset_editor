@@ -29,30 +29,28 @@ put_string_hl_at_bc_in_vblank:
 
 SECTION "Print high low", ROM0
 print_hl:
-  push de
-    push bc
-      ld bc, vram_iterator
-      call ld_de_ibc
+  PUSH_BC_DE
+    ld bc, vram_iterator
+    call ld_de_ibc
 .loop:
-      ld a, [hl]
-      cp $0
-      jp z, .end
-        cp "\n" ; $0a ; '\n'
-        jp nz, .default
-          call ld_ibc_de
-          call print_newline
-          call ld_de_ibc
-          inc hl
-          jp .loop
+    ld a, [hl]
+    cp $0
+    jp z, .end
+      cp "\n" ; $0a ; '\n'
+      jp nz, .default
+        call ld_ibc_de
+        call print_newline
+        call ld_de_ibc
+        inc hl
+        jp .loop
 .default:
-      ld [de], a
-      inc de
-      inc hl
-      jp .loop
+    ld [de], a
+    inc de
+    inc hl
+    jp .loop
 .end:
-      call ld_ibc_de
-    pop bc
-  pop de
+    call ld_ibc_de
+  POP_BC_DE
   ret
 
 ;back_width EQU $20
@@ -60,22 +58,26 @@ print_hl:
 
 SECTION "Print newline", ROM0
 print_newline:
-  push de
-    push bc
-      push hl
-        ld hl, vram_iterator
-        LD_BC_HL
-        call ld_hl_ihl
-        ld de, back_width
-        add hl, de
-        ld a, l
-        and width_mask
-        ld l, a
-        LD_DE_HL
-        call ld_ibc_de
-      pop hl
-    pop bc
-  pop de
+  PUSH_HL_BC_DE
+    ld hl, vram_iterator
+    LD_BC_HL
+    call ld_hl_ihl
+    ld de, back_width
+    add hl, de
+    ld a, l
+    and width_mask
+    ld l, a
+    LD_DE_HL
+    call ld_ibc_de
+  POP_HL_BC_DE
   ret
+
+PRINT_ADDR : MACRO
+  CALL_WITH_HL_PARAM print_hl, \1
+ENDM
+
+PRINT_ADDR_U : MACRO
+  CALL_WITH_HL_PARAM_U print_hl, \1
+ENDM
 
 ENDC ; PRINT_UTILS_INC

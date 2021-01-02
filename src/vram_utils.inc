@@ -9,10 +9,10 @@ SECTION "VRAM iterator", WRAM0
 vram_iterator: DS 2
 
 VBLANK_WAIT : MACRO
-.waitVBlank
+.waitVBlank\@:
   ld a, [rLY]
   cp $90 ; Check if the LCD is past VBlank
-  jr c, .waitVBlank
+  jr c, .waitVBlank\@
 ENDM
 
 SECTION "init vram iterator", ROM0

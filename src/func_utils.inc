@@ -5,9 +5,26 @@ CALL_HL : MACRO
   rst $08
 ENDM
 
-SECTION "Unique call hl", ROM0
-unique_call_hl:
+CALL_ADDR_U : MACRO
+  ld hl, \1
   CALL_HL
-  ret
+ENDM
+
+CALL_ADDR : MACRO
+  push hl
+    CALL_ADDR_U \1
+  pop hl
+ENDM
+
+CALL_WITH_HL_PARAM_U : MACRO
+  ld hl, \2
+  call \1
+ENDM
+
+CALL_WITH_HL_PARAM : MACRO
+  push hl
+    CALL_WITH_HL_PARAM_U
+  pop hl
+ENDM
 
 ENDC

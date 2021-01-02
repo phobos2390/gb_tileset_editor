@@ -26,6 +26,13 @@ memset::
 
     ret
 
+MEMSET : MACRO
+  ld hl, \1
+  ld d, \2
+  ld bc, \3
+  call memset
+ENDM
+
 SECTION "Memset_fast",ROM0
 
 ;-------------------------------------------------------------------------------
@@ -57,6 +64,13 @@ memcopy:: ; hl and de must be incremented at the end of this
     jr      nz,memcopy
 
     ret
+
+MEMCPY : MACRO
+  ld de, \1
+  ld hl, \2
+  ld bc, \3
+  call memcopy
+ENDM
 
 SECTION "Memcpy_fast",ROM0
 

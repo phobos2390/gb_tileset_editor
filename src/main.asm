@@ -7,6 +7,7 @@ INCLUDE "interrupt_vectors.inc"
 INCLUDE "vram_utils.inc"
 INCLUDE "joypad_eval.inc"
 INCLUDE "oam_utils.inc"
+INCLUDE "timing_utils.inc"
 
 SECTION "Game code", ROM0
 main:
@@ -17,8 +18,7 @@ main:
   ld bc, vram_iterator
   call ld_ibc_de
 
-  ld hl, hello_world
-  call print_hl
+  PRINT_ADDR_U hello_world
 
   ld hl, window_background_str
   ld bc, window_layer_start
@@ -339,18 +339,16 @@ update_sprite_character:
     ld a, $4
 .store_a:
   ld [sprite_0_character], a
-  push bc
-    push de
-      ld d, a
-      ld a, [sprite_0_x]
-      ld b, a
-      ld a, [sprite_0_y]
-      ld c, a
-      ld e, $0
-      ld a, $0
-      call set_sprite_a
-    pop de
-  pop bc
+  push hl
+    LD_HL_struct_K_field sprite,character,0
+    ld [hl], a
+    LD_HL_struct_K_field sprite,x_position,0
+    ld a, [sprite_0_x]
+    ld [hl], a
+    LD_HL_struct_K_field sprite,y_position,0
+    ld a, [sprite_0_y]
+    ld [hl], a
+  pop hl
   ret
 
 SECTION "Increment Character", ROM0
@@ -398,31 +396,23 @@ increment_timer_cb:
 
 SECTION "init cursor", ROM0
 init_set_cursor:
-  push bc
-    push de
-      ld a, 0
-      ld bc, $2020  ; x - 1
-                    ; y - 1
-      ld de, $0100 ; character - 0x4
-                   ; flag - %00000000
-      call set_sprite_a
-      call dma_update_sprites
-      ld a, $01
-      ld [sprite_0_character], a
-      ld a, $08
-      ld [sprite_0_x], a
-      ld a, $10
-      ld [sprite_0_y], a
-    pop de
-  pop bc
+  PUSH_HL_BC_DE
+    LD_HL_struct_K sprite, 0
+    ld bc, $2020  ; x - 1
+                  ; y - 1
+    ld de, $0100 ; character - 0x4
+                 ; flag - %00000000
+    call set_sprite_at_hl
+    call dma_update_sprites
+    LD_A_ADDR_VAL sprite_0_character, $01
+    LD_A_ADDR_VAL sprite_0_x, $08
+    LD_A_ADDR_VAL sprite_0_y, $10
+  POP_HL_BC_DE
   ret
 
 SECTION "Initialize display", ROM0
 init_display:
-.waitVBlank
-  ld a, [rLY]
-  cp $90 ; Check if the LCD is past VBlank
-  jr c, .waitVBlank
+  VBLANK_WAIT
 
   xor a ; ld a, 0 ; We only need to reset a value with bit 7 reset, but 0 does the job
   ld [rLCDC], a ; We will have to write to LCDC again later, so it's not a bother, really.
@@ -430,17 +420,18 @@ init_display:
 
 SECTION "Initialize font", ROM0
 init_font:
-  ld hl, tileset_start
-  ld de, FontTiles
-  ld bc, FontTilesEnd - FontTiles
-.copyFont
-  ld a, [de] ; Grab 1 byte from the source
-  ld [hli], a ; Place it at the destination, incrementing hl
-  inc de ; Move to next byte
-  dec bc ; Decrement count
-  ld a, b ; Check if count is 0, since `dec bc` doesn't update flags
-  or c
-  jr nz, .copyFont
+  MEMCPY tileset_start, FontTiles, FontTilesEnd - FontTiles
+;  ld hl, tileset_start
+;  ld de, FontTiles
+;  ld bc, FontTilesEnd - FontTiles
+;.copyFont
+;  ld a, [de] ; Grab 1 byte from the source
+;  ld [hli], a ; Place it at the destination, incrementing hl
+;  inc de ; Move to next byte
+;  dec bc ; Decrement count
+;  ld a, b ; Check if count is 0, since `dec bc` doesn't update flags
+;  or c
+;  jr nz, .copyFont
   ret
 
 SECTION "Finalize initialization", ROM0

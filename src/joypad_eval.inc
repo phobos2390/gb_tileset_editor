@@ -69,7 +69,6 @@ eval_joypad:
 .eval_b:
   ld a, b
   and button_b
-  cp $0
   jp z, .eval_select
     push hl
       ld hl, button_b_f
@@ -83,7 +82,6 @@ eval_joypad:
 .eval_select:
   ld a, b
   and button_select
-  cp $0
   jp z, .eval_start
     push hl
       ld hl, button_select_f
@@ -97,7 +95,6 @@ eval_joypad:
 .eval_start:
   ld a, b
   and button_start
-  cp $0
   jp z, .eval_up
     push hl
       ld hl, button_start_f
@@ -111,7 +108,6 @@ eval_joypad:
 .eval_up:
   ld a, b
   and button_up
-  cp $0
   jp z, .eval_down
     push hl
       ld hl, pad_up_f
@@ -125,7 +121,6 @@ eval_joypad:
 .eval_down:
   ld a, b
   and button_down
-  cp $0
   jp z, .eval_right
     push hl
       ld hl, pad_down_f
@@ -139,7 +134,6 @@ eval_joypad:
 .eval_right:
   ld a, b
   and button_right
-  cp $0
   jp z, .eval_left
     push hl
       ld hl, pad_right_f
@@ -153,7 +147,6 @@ eval_joypad:
 .eval_left:
   ld a, b
   and button_left
-  cp $0
   jp z, .eval_end
     push hl
       ld hl, pad_left_f

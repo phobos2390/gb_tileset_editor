@@ -57,50 +57,39 @@ ENDR
 SECTION "VBLANK INTERRUPT", ROM0[$40]
 vblank_vector:
   push hl
-  ld hl, vblank_f
-  jp int_common
+    ld hl, vblank_f
+    jp int_common
 
 SECTION "LCD Stat", ROM0[$48]
 lcd_vector:
   push hl
-  ld hl, lcd_f
-  jp int_common
+    ld hl, lcd_f
+    jp int_common
 
 SECTION "Timer", ROM0[$50]
 timer_vector:
   push hl
-  ld hl, timer_f
-  jp int_common
+    ld hl, timer_f
+    jp int_common
 
 SECTION "Serial", ROM0[$58]
 serial_vector:
   push hl
-  ld hl, serial_f
-  jp int_common
+    ld hl, serial_f
+    jp int_common
 
 SECTION "Joypad0", ROM0[$60]
 joypad0_vector:
   push hl
-  ld hl, joypad_f
-  jp int_common
+    ld hl, joypad_f
+    jp int_common
 
 ;-------------------------------------------------------------------------------
 
 SECTION "Interrupt_logic", ROM0
 int_common:
-  push bc
-    push de
-      ld b, h
-      ld c, l
-      call ld_de_ibc
-      ld h, d
-      ld l, e
-      ld de, .end
-      push de
-      jp hl
-.end:
-    pop de
-  pop bc
+    call ld_hl_ihl
+    CALL_HL
   pop hl
   reti
 

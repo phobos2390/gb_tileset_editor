@@ -15,6 +15,12 @@ VBLANK_WAIT : MACRO
   jr c, .waitVBlank\@
 ENDM
 
+RET_V : MACRO
+  ld a, [rLY]
+  cp $90 ; Check if the LCD is past VBlank
+  ret c
+ENDM
+
 SECTION "init vram iterator", ROM0
 init_vram_iterator:
   push hl
@@ -46,7 +52,7 @@ SECTION "init window", ROM0
 init_window:
   ld a, $7
   ld [rWX], a
-  ld a, $70
+  ld a, $90
   ld [rWY], a
   ret
 

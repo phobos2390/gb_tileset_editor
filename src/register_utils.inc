@@ -52,6 +52,23 @@ ENDM
 
 ;-------------------------------------------------------------------------------
 
+MULT_HL_4 : MACRO
+  add hl, hl ; 2hl = hl + hl
+  add hl, hl ; 4hl = 2hl + 2hl
+ENDM
+
+MULT_HL_8 : MACRO
+  MULT_HL_4  ; 4hl
+  add hl, hl ; 8hl = 4hl + 4hl = (1+1)(4hl) = 2*4*hl
+ENDM
+
+MULT_HL_16 : MACRO
+  MULT_HL_4 ; 4 * hl
+  MULT_HL_4 ; 4 * 4 * hl
+ENDM
+
+;-------------------------------------------------------------------------------
+
 CPL_HL : MACRO
   ld a, h
   cpl

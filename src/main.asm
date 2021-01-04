@@ -15,6 +15,7 @@ character_edit_bg EQU window_layer_start + $21
 bg_log_location EQU window_layer_start + $2B ;_SCRN0 + ($20 * $10)
 mode_log_location EQU window_layer_start + $B + ($20 * $2) ; _SCRN0 + ($20 * $11)
 selected_character_window_position EQU window_layer_start + $8B
+cursor_color_window_position EQU window_layer_start + $CB
 
 character_list_vram_start EQU vram_start + $22
 selected_character_position EQU vram_start + $20 + $12
@@ -216,8 +217,8 @@ b_cb:
 
 SECTION "start callback", ROM0
 start_cb:
-  push hl
-    push bc
+;  push hl
+;    push bc
 ;      ld hl, button_srt_str
 ;      ld bc, bg_log_location
 ;      call put_string_hl_at_bc
@@ -226,9 +227,9 @@ start_cb:
 ;      ld bc, mode_log_location
 ;      call put_string_hl_at_bc_in_vblank
 
-      call char_select_mode
-    pop bc
-  pop hl
+      ;call char_select_mode
+;    pop bc
+;  pop hl
   ret
 
 SECTION "select callback", ROM0
@@ -245,6 +246,7 @@ select_cb:
 SECTION "Timer callback", ROM0
 timer_cb:
   call joypad_cb
+  call update_selected_character
   ;call increment_timer_cb
   ret
 
@@ -285,6 +287,10 @@ mode_minimum_y: DS 1
 mode_maximum_y: DS 1
 selected_character: DS 1
 selected_character_data: DS 2
+selected_character_tileset: DS $10
+char_edit_column_mask: DS 1
+char_edit_tileset_ptr: DS 2
+char_edit_color: DS 1
 
 min_x       EQU $8 + $8
 min_y       EQU $10 + $8
@@ -298,11 +304,18 @@ char_column EQU $10
 
 SECTION "Sprite up dpad", ROM0
 char_select_up_cb:
-  push bc
+  PUSH_BC_DE
     ld a, [mode_minimum_y]
     ld b, a
     ld a, [mode_maximum_y]
     ld c, a
+    
+    push hl
+      ld hl, char_edit_tileset_ptr
+      call ld_de_ihl
+      DEC_DE_W
+      call ld_ihl_de
+    pop hl
 
     ld a, [selected_character]
     sub char_column
@@ -312,10 +325,16 @@ char_select_up_cb:
     sub step_size
     cp b
     jp nc, .store_a
+      ld de, selected_character_tileset + $E
+      push hl
+        ld hl, char_edit_tileset_ptr
+        call ld_ihl_de
+      pop hl
       ld a, c
 .store_a:
     ld [cursor_y], a
-  pop bc
+
+  POP_BC_DE
   ret
 
 SECTION "Sprite down dpad", ROM0
@@ -327,6 +346,13 @@ char_select_down_cb:
     add (max_y_comp - max_y)
     ld c, a
 
+    push hl
+      ld hl, char_edit_tileset_ptr
+      call ld_de_ihl
+      INC_DE_W
+      call ld_ihl_de
+    pop hl
+
     ld a, [selected_character]
     add char_column
     ld [selected_character], a
@@ -334,6 +360,11 @@ char_select_down_cb:
     add step_size
     cp c
     jp c, .store_a
+      ld de, selected_character_tileset
+      push hl
+        ld hl, char_edit_tileset_ptr
+        call ld_ihl_de
+      pop hl
       ld a, b
 .store_a:
     ld [cursor_y], a
@@ -342,11 +373,15 @@ char_select_down_cb:
 
 SECTION "Sprite left dpad", ROM0
 char_select_left_cb:
-  push bc
+  PUSH_BC_DE
     ld a, [mode_minimum_x]
     ld b, a
     ld a, [mode_maximum_x]
     ld c, a
+
+    ld a, [char_edit_column_mask]
+    rl a
+    ld [char_edit_column_mask], a
 
     ld a, [selected_character]
     dec a
@@ -355,13 +390,15 @@ char_select_left_cb:
     sub step_size
     cp b
     jp nc, .store_a
+      ld a, $1
+      ld [char_edit_column_mask], a
       ld a, [selected_character]
       add char_column
       ld [selected_character], a
       ld a, c
 .store_a:
     ld [cursor_x], a
-  pop bc
+  POP_BC_DE
   ret
 
 SECTION "Sprite right dpad", ROM0
@@ -373,6 +410,10 @@ char_select_right_cb:
     add  (max_x_comp - max_x)
     ld c, a
 
+    ld a, [char_edit_column_mask]
+    rr a
+    ld [char_edit_column_mask], a
+
     ld a, [selected_character]
     inc a
     ld [selected_character], a
@@ -380,10 +421,12 @@ char_select_right_cb:
     add step_size
     cp c
     jp c, .store_a
+      ld a, $80
+      ld [char_edit_column_mask], a
       ld a, [selected_character]
       sub char_column
       ld [selected_character], a
-      ld a, b
+      ld a, b      
 .store_a:
     ld [cursor_x], a
   pop bc
@@ -445,7 +488,11 @@ char_select_mode:
   call ld_ide_hl
 
   ld de, button_start_f
-  ld hl, sprite_move_start_cb
+  ld hl, select_cb
+  call ld_ide_hl
+
+  ld de, button_start_f
+  ld hl, start_cb
   call ld_ide_hl
 
   ld de, button_a_f
@@ -458,42 +505,123 @@ char_select_mode:
 
   ret
 
+SECTION "char edit select callback", ROM0
+char_edit_select_cb:
+  ld a, [char_edit_color]
+  inc a
+  cp $4
+  jp nz, .end
+    ld a, 0
+.end:
+  ld [char_edit_color], a
+  ld [cursor_color_window_position], a
+  ret
+
+SECTION "char edit a callback", ROM0
+char_edit_a_cb:
+  PUSH_HL_BC_DE
+    ld hl, char_edit_tileset_ptr
+    push hl
+      call ld_hl_ihl
+      call ld_bc_ihl
+    
+      ld a, [char_edit_column_mask]
+      cpl
+      ld d, a
+      ld a, b
+      and d
+      ld b, a
+      ld a, c
+      and d
+      ld c, a
+
+      ld a, [char_edit_color]
+      and %00000001
+      jp z, .not_c
+        or c
+        ld c, a
+.not_c:
+      ld a, [char_edit_color]
+      and %00000010
+      jp z, .not_b
+        or b
+        ld b, a
+.not_b:
+      call ld_ihl_bc
+    pop hl
+    ;call ld_ihl_bc
+  POP_HL_BC_DE
+  ;call put_selected_character_data_into_window
+  ret
+
+SECTION "char edit start callback", ROM0
+char_edit_start_cb:
+  ld a, [char_edit_color]
+  cp $0
+  jp nz, .end
+    ld a, $4
+.end:
+  dec a
+  ld [char_edit_color], a
+  ld [cursor_color_window_position], a
+  ret
+
 SECTION "Set char edit mode", ROM0
 char_edit_mode:
-  LD_A_ADDR_VAL rWX,$7
-  LD_A_ADDR_VAL rWY,0
-  LD_A_ADDR_VAL cursor_x, $10
-  LD_A_ADDR_VAL cursor_y, $18
+  LD_A_ADDR_VAL cursor_x, $10; $8  ;$10
+  LD_A_ADDR_VAL cursor_y, $18; $10 ;$18
+
+  LD_A_ADDR_VAL char_edit_color, $0
+  LD_A_ADDR_VAL char_edit_column_mask, %10000000
 
   LD_A_ADDR_VAL mode_minimum_x, min_x
   LD_A_ADDR_VAL mode_maximum_x, (step_size * $7) + min_x
   LD_A_ADDR_VAL mode_minimum_y, min_y
   LD_A_ADDR_VAL mode_maximum_y, (step_size * $7) + min_y
 
-  ld a, [selected_character]
-  ld [char_select_character], a
-  ld [selected_character_window_position], a
   PUSH_HL_BC
+    ld bc, char_edit_tileset_ptr
+    ld hl, selected_character_tileset
+    call ld_ibc_hl
+
+    ld a, [selected_character]
+    ld [char_select_character], a
+    ld [selected_character_window_position], a
     ld h, 0
     ld l, a
     MULT_HL_16
-    ld bc, tileset_start
+    ld bc, font_shadow
     add hl, bc
     ld bc, selected_character_data
     call ld_ibc_hl
+    push de
+      ; hl = font_shadow + selected_character * 16
+      ld b, $10
+      ld de, selected_character_tileset
+      call memcopy_fast
+    pop de
   POP_HL_BC
 
+  call put_selected_character_data_into_window
+
   ld de, button_a_f
-  ld hl, a_cb
+  ld hl, char_edit_a_cb
   call ld_ide_hl
 
   ld de, button_b_f
   ld hl, char_edit_b_cb
   call ld_ide_hl
   
-  ld hl, edit_mode_str
-  ld bc, mode_log_location
-  call put_string_hl_at_bc
+  ld de, button_select_f
+  ld hl, char_edit_select_cb
+  call ld_ide_hl
+
+  ld de, button_start_f
+  ld hl, char_edit_start_cb
+  call ld_ide_hl
+
+  LD_A_ADDR_VAL rWX,$7
+  LD_A_ADDR_VAL rWY,0
   ret
 
 SECTION "Cursor edit mode b", ROM0
@@ -511,8 +639,78 @@ char_edit_b_cb:
   ret
 
 
+SECTION "Char row data BC col D to E index", ROM0
+; Params
+;  bc - char row data
+;  d - column mask data
+;  e - color value index 
+row_data_bc_col_d_to_e_color:
+  ld e, 0
+  ld a, d
+  and b
+  jp z, .b_0
+    inc e
+.b_0:
+  ld a, d
+  and c
+  jp z, .c_0
+    inc e
+    inc e
+.c_0:
+  ret
+
+SECTION "Character data update", ROM0
+update_selected_character:
+  ld a, [rLY]
+  cp $90
+  ret c
+  
+  ld a, [char_select_character]
+  ld [selected_character_window_position], a
+  ld a, [selected_character]
+  ld [selected_character_position], a
+  ld a, [char_edit_color]
+  ld [cursor_color_window_position], a
+  ret
+
+SECTION "Put char data row into hl", ROM0
+put_chardata_bc_row_into_hl:
+  push bc
+    push hl
+      LD_HL_BC
+      call ld_bc_ihl
+    pop hl
+    push de
+      push hl
+        ld d, %10000000
+.loop:
+        call row_data_bc_col_d_to_e_color
+        ld a, [rLY]
+        cp $90
+        jp c, .loop
+          ld a, e
+          ld [hl+], a
+          or a ; reset carry flag
+          rr d
+          jp nz, .loop
+      pop hl
+    pop de
+  pop bc
+  ret
+
 SECTION "Put char data in window", ROM0
 put_selected_character_data_into_window:
+  PUSH_HL_BC_DE
+    ld bc, selected_character_tileset
+    ld hl, character_edit_bg
+    ld de, back_width
+
+    REPT $8
+      call put_chardata_bc_row_into_hl
+      add hl, de ; next background screen row
+      INC_BC_W   ; next tileset row
+    ENDR
+  POP_HL_BC_DE
   ret
 
 SECTION "Update sprite character", ROM0
@@ -618,6 +816,7 @@ init_display:
 SECTION "Initialize font", ROM0
 init_font:
   MEMCPY tileset_start, FontTiles, FontTilesEnd - FontTiles
+  MEMCPY font_shadow, FontTiles, FontTilesEnd - FontTiles
 ;  ld hl, tileset_start
 ;  ld de, FontTiles
 ;  ld bc, FontTilesEnd - FontTiles
@@ -669,6 +868,11 @@ FontTiles:
 INCLUDE "font_redone.inc"
 INCLUDE "font_other.inc"
 FontTilesEnd:
+
+SECTION "Font shadow", WRAM0
+font_shadow:
+DS FontTilesEnd - FontTiles
+font_shadow_end:
 
 SECTION "strings", ROM0
 hello_world:

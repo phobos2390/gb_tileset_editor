@@ -50,6 +50,21 @@ INC_BC_W : MACRO
   inc bc
 ENDM
 
+DEC_HL_W : MACRO
+  dec hl
+  dec hl
+ENDM
+
+DEC_DE_W : MACRO
+  dec de
+  dec de
+ENDM
+
+DEC_BC_W : MACRO
+  dec bc
+  dec bc
+ENDM
+
 ;-------------------------------------------------------------------------------
 
 MULT_HL_4 : MACRO

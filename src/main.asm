@@ -536,14 +536,16 @@ char_edit_a_cb:
       ld c, a
 
       ld a, [char_edit_color]
-      and %00000001
+      and %00000010
       jp z, .not_c
+        ld a, [char_edit_column_mask]
         or c
         ld c, a
 .not_c:
       ld a, [char_edit_color]
-      and %00000010
+      and %00000001
       jp z, .not_b
+        ld a, [char_edit_column_mask]
         or b
         ld b, a
 .not_b:
@@ -551,7 +553,7 @@ char_edit_a_cb:
     pop hl
     ;call ld_ihl_bc
   POP_HL_BC_DE
-  ;call put_selected_character_data_into_window
+  call put_selected_character_data_into_window
   ret
 
 SECTION "char edit start callback", ROM0

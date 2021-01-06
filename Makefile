@@ -1,11 +1,13 @@
 NAME := tileset_editor
 TEST_NAME := test_$(NAME)
+MBC_TYPE := 0x1B
+RAM_SIZE := 0x2
 
 build:
 	@mkdir -p build
 	rgbasm -i src src/*.asm -o build/$(NAME).o 
 	rgblink -o build/$(NAME).gb build/$(NAME).o -m build/$(NAME).map -n build/$(NAME).sym
-	rgbfix -v -p 0 build/$(NAME).gb
+	rgbfix -m $(MBC_TYPE) -r $(RAM_SIZE) -v -p 0 build/$(NAME).gb
 
 build_test:
 	@mkdir -p build

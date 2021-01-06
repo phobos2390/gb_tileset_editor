@@ -9,6 +9,7 @@ INCLUDE "vram_utils.inc"
 INCLUDE "joypad_eval.inc"
 INCLUDE "oam_utils.inc"
 INCLUDE "timing_utils.inc"
+INCLUDE "sram_utils.inc"
 
 window_layer_start EQU _SCRN1
 character_edit_bg EQU window_layer_start + $21
@@ -288,6 +289,7 @@ mode_maximum_y: DS 1
 selected_character: DS 1
 selected_character_data: DS 2
 selected_character_tileset: DS $10
+selected_character_data_index: DS 2
 char_edit_column_mask: DS 1
 char_edit_tileset_ptr: DS 2
 char_edit_color: DS 1
@@ -550,6 +552,33 @@ char_edit_a_cb:
         ld b, a
 .not_b:
       call ld_ihl_bc
+      PUSH_BC_DE
+        LD_DE_BC
+        ld bc, selected_character_tileset
+        INV_BC
+        add hl, bc
+        push hl
+          ld hl, selected_character_data_index
+          call ld_bc_ihl
+        pop hl
+        add hl, bc
+        push hl
+          ld bc, font_shadow
+          add hl, bc
+          LD_A_ADDR_VAL rRAMG, CART_RAM_ENABLE ; enable SRAM read
+          call ld_ihl_de
+          LD_A_ADDR_VAL rRAMG, CART_RAM_DISABLE ; enable SRAM read
+        pop hl
+        push hl
+          ld bc, tileset_start
+          add hl, bc
+.verify_loop:
+          call ld_ihl_de
+          ld a, [rLY]
+          cp $90
+          jp c, .verify_loop
+        pop hl
+      POP_BC_DE
     pop hl
     ;call ld_ihl_bc
   POP_HL_BC_DE
@@ -592,6 +621,8 @@ char_edit_mode:
     ld h, 0
     ld l, a
     MULT_HL_16
+    ld bc, selected_character_data_index
+    call ld_ibc_hl
     ld bc, font_shadow
     add hl, bc
     ld bc, selected_character_data
@@ -600,7 +631,7 @@ char_edit_mode:
       ; hl = font_shadow + selected_character * 16
       ld b, $10
       ld de, selected_character_tileset
-      call memcopy_fast
+      call memcopy_fast_sram
     pop de
   POP_HL_BC
 
@@ -817,19 +848,23 @@ init_display:
 
 SECTION "Initialize font", ROM0
 init_font:
+;  bc - IN & OUT size
+;  de - destination pointer
+  ld bc, FontTilesEnd - FontTiles
+  ld de, tileset_start
+  call memcopy_from_sram
+  ld a, b
+  or c
+  ret nz
   MEMCPY tileset_start, FontTiles, FontTilesEnd - FontTiles
-  MEMCPY font_shadow, FontTiles, FontTilesEnd - FontTiles
-;  ld hl, tileset_start
-;  ld de, FontTiles
-;  ld bc, FontTilesEnd - FontTiles
-;.copyFont
-;  ld a, [de] ; Grab 1 byte from the source
-;  ld [hli], a ; Place it at the destination, incrementing hl
-;  inc de ; Move to next byte
-;  dec bc ; Decrement count
-;  ld a, b ; Check if count is 0, since `dec bc` doesn't update flags
-;  or c
-;  jr nz, .copyFont
+  ;- memset()    d = value    hl = start address    bc = size 
+  ld d, 0
+  ld bc, $1000 ; tileset size
+  call memset_sram
+  ld bc, FontTilesEnd - FontTiles
+  ld hl, FontTiles
+  call memcopy_to_sram  
+
   ret
 
 SECTION "Finalize initialization", ROM0
@@ -871,10 +906,10 @@ INCLUDE "font_redone.inc"
 INCLUDE "font_other.inc"
 FontTilesEnd:
 
-SECTION "Font shadow", WRAM0
-font_shadow:
-DS FontTilesEnd - FontTiles
-font_shadow_end:
+;SECTION "Font shadow", WRAM0
+;font_shadow:
+;DS $1000
+;font_shadow_end:
 
 SECTION "strings", ROM0
 hello_world:

@@ -260,11 +260,11 @@ ld_de_ibc:
 SECTION "LD [de] bc", ROM0
 ; ld de, [bc]
 ld_ide_bc:
-  ld a, [de]
-  ld c, a
+  ld a, c
+  ld [de], a
   inc de
-  ld a, [de]
-  ld b, a
+  ld a, b
+  ld [de], a
   dec de
   ret
 

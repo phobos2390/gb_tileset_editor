@@ -76,8 +76,8 @@ main:
   ld de, 1 ; update every tick
   call add_timing_table_entry_callback
 
-  ld de, read_joypad
-  call int_set_joypad_de
+  ;ld de, read_joypad
+  ;call int_set_joypad_de
 
   call init_sprite_table
   call init_set_cursor
@@ -256,23 +256,24 @@ joypad_cb_amount_invoked: DS 2
 
 SECTION "Joypad callback", ROM0
 joypad_cb:
-  push hl
-    push de
-      ld hl, joypad_cb_amount_invoked
-      call ld_de_ihl
-      inc de
-      call ld_ihl_de
-      ld a, e
-    pop de
-  pop hl
-  cp $2
-  ret c
-  ld a, 0
-  ld [joypad_cb_amount_invoked], a
-  ld [joypad_cb_amount_invoked+1], a
+  ;push hl
+  ;  push de
+  ;    ld hl, joypad_cb_amount_invoked
+  ;    call ld_de_ihl
+  ;    inc de
+  ;    call ld_ihl_de
+  ;    ld a, e
+  ;  pop de
+  ;pop hl
+  ;cp $2
+  ;ret c
+  ;ld a, 0
+  ;ld [joypad_cb_amount_invoked], a
+  ;ld [joypad_cb_amount_invoked+1], a
   
   call read_joypad
-  call eval_joypad
+  call eval_held_button
+  call eval_rising_edge
   ret
 
 SECTION "Sprite character", WRAM0
@@ -472,6 +473,7 @@ char_select_mode:
   LD_A_ADDR_VAL mode_maximum_x, max_x
   LD_A_ADDR_VAL mode_minimum_y, min_y
   LD_A_ADDR_VAL mode_maximum_y, max_y
+  LD_A_ADDR_VAL held_mask, disable_a_held
 
   ld de, pad_up_f
   ld hl, char_select_up_cb
@@ -516,7 +518,12 @@ char_edit_select_cb:
     ld a, 0
 .end:
   ld [char_edit_color], a
+.loop:
+  ld a, [char_edit_color]
   ld [cursor_color_window_position], a
+  ld a, [rLY]
+  cp $90
+  jp z, .loop
   ret
 
 SECTION "char edit a callback", ROM0
@@ -594,7 +601,12 @@ char_edit_start_cb:
 .end:
   dec a
   ld [char_edit_color], a
+.loop:
+  ld a, [char_edit_color]
   ld [cursor_color_window_position], a
+  ld a, [rLY]
+  cp $90
+  jp z, .loop
   ret
 
 SECTION "Set char edit mode", ROM0
@@ -609,6 +621,8 @@ char_edit_mode:
   LD_A_ADDR_VAL mode_maximum_x, (step_size * $7) + min_x
   LD_A_ADDR_VAL mode_minimum_y, min_y
   LD_A_ADDR_VAL mode_maximum_y, (step_size * $7) + min_y
+
+  LD_A_ADDR_VAL held_mask, (disable_start_held & disable_select_held & disable_a_held)
 
   PUSH_HL_BC
     ld bc, char_edit_tileset_ptr

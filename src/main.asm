@@ -510,7 +510,7 @@ char_select_mode:
   ret
 
 SECTION "char edit select callback", ROM0
-char_edit_select_cb:
+char_edit_inc_color_cb:
   ld a, [char_edit_color]
   inc a
   cp $4
@@ -527,7 +527,7 @@ char_edit_select_cb:
   ret
 
 SECTION "char edit a callback", ROM0
-char_edit_a_cb:
+char_edit_set_pixel_cb:
   PUSH_HL_BC_DE
     ld hl, char_edit_tileset_ptr
     push hl
@@ -593,7 +593,7 @@ char_edit_a_cb:
   ret
 
 SECTION "char edit start callback", ROM0
-char_edit_start_cb:
+char_edit_dec_color_cb:
   ld a, [char_edit_color]
   cp $0
   jp nz, .end
@@ -622,7 +622,7 @@ char_edit_mode:
   LD_A_ADDR_VAL mode_minimum_y, min_y
   LD_A_ADDR_VAL mode_maximum_y, (step_size * $7) + min_y
 
-  LD_A_ADDR_VAL held_mask, (disable_start_held & disable_select_held & disable_a_held)
+  LD_A_ADDR_VAL held_mask, (disable_start_held & disable_b_held & disable_a_held)
 
   PUSH_HL_BC
     ld bc, char_edit_tileset_ptr
@@ -652,19 +652,19 @@ char_edit_mode:
   call put_selected_character_data_into_window
 
   ld de, button_a_f
-  ld hl, char_edit_a_cb
+  ld hl, char_edit_set_pixel_cb
   call ld_ide_hl
 
-  ld de, button_b_f
-  ld hl, char_edit_b_cb
+  ld de, button_select_f
+  ld hl, char_edit_return_to_char_select_cb
   call ld_ide_hl
   
-  ld de, button_select_f
-  ld hl, char_edit_select_cb
+  ld de, button_b_f
+  ld hl, char_edit_inc_color_cb
   call ld_ide_hl
 
   ld de, button_start_f
-  ld hl, char_edit_start_cb
+  ld hl, char_edit_dec_color_cb
   call ld_ide_hl
 
   LD_A_ADDR_VAL rWX,$7
@@ -672,7 +672,7 @@ char_edit_mode:
   ret
 
 SECTION "Cursor edit mode b", ROM0
-char_edit_b_cb:
+char_edit_return_to_char_select_cb:
   ld a, [char_select_cursor_x]
   ld [cursor_x], a
 

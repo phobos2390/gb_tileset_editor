@@ -127,4 +127,46 @@ memcopy_inc:: ; hl and de should be incremented at the end of this
 
     ret
 
+;-------------------------------------------------------------------------------
+;- memcmp()    bc = size      hl = first      de = second  a = diff            -
+;-------------------------------------------------------------------------------
+
+memcmp:: ; hl and de must be incremented at the end of this
+    dec bc
+    ld a, b
+    or c
+    jp z, .finish
+
+    ld a, [de]
+    sub [hl]
+    ret nz
+
+    inc de
+    inc hl
+    jp memcmp
+
+.finish:
+
+    ret
+
+;-------------------------------------------------------------------------------
+;- memcmp_fast()    b = size      hl = first      de = second  a = diff       -
+;-------------------------------------------------------------------------------
+
+memcmp_fast:: ; hl and de must be incremented at the end of this
+    dec b
+    jp z, .finish
+
+    ld a, [de]
+    sub [hl]
+    ret nz ; returns the difference
+
+    inc de
+    inc hl
+    jp memcmp_fast
+
+.finish:
+    ld a, $0 
+    ret
+
 ENDC ; MEM_UTILS_INC

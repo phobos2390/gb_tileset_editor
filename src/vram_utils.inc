@@ -8,6 +8,9 @@ INCLUDE "mem_utils.inc"
 SECTION "VRAM iterator", WRAM0
 vram_iterator: DS 2
 
+SECTION "newline offset", WRAM0
+newline_offset: DS 2
+
 VBLANK_WAIT : MACRO
 .waitVBlank\@:
   ld a, [rLY]
@@ -27,6 +30,9 @@ init_vram_iterator:
     push bc
       ld hl, _SCRN0 ; background 1
       ld bc, vram_iterator
+      call ld_ibc_hl
+      ld hl, $0000
+      ld bc, newline_offset
       call ld_ibc_hl
     pop bc
   pop hl

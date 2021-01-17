@@ -28,10 +28,8 @@ main:
   call init_window
   call init_vblank_list
   call init_timing_table
-
-  ld de, vram_start
-  ld bc, vram_iterator
-  call ld_ibc_de
+  
+  call init_vram_iterator
 
   PRINT_ADDR_U character_list_box
 
@@ -955,10 +953,8 @@ CHAR = $0
     db "\n"
     db $0E
     REPT $10
-      IF CHAR == 0
-        db $20
-      ELIF CHAR == "\n"
-        db $20
+      IF (CHAR == 0) || (CHAR == "\n") || (CHAR == escape_char)
+        db escape_char, LOW(CHAR)
       ELSE
         db LOW(CHAR)
       ENDC

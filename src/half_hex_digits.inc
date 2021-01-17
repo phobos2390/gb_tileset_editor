@@ -148,7 +148,7 @@ get_char_a_tileset_offset_hl:
   MULT_HL_16
   ret
 
-SECTION "Get_char_a_tileset_location_hl", ROM0
+SECTION "set_char_b_to_hex_byte_a_at_de", ROM0
 set_char_b_to_hex_byte_a_at_de:
   PUSH_HL_BC_DE
     ld c, a

@@ -29,7 +29,7 @@ put_string_hl_at_bc_in_vblank:
   pop hl
   ret
 
-SECTION "put string hl at bc in vblank", ROM0
+SECTION "put string hl at b row c column in vblank", ROM0
 print_hl_at_b_row_c_column_vblank:
   call init_vram_iterator
 .line_number:

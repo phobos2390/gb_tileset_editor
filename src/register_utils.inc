@@ -126,6 +126,45 @@ INV_BC : MACRO
   inc bc
 ENDM
 
+SUB16 : MACRO
+  ld a, LOW(\1)
+  sub LOW(\2)
+  ld LOW(\1), a
+  ld a, HIGH(\1)
+  sbc HIGH(\2)
+  ld HIGH(\1), a
+ENDM
+
+;-------------------------------------------------------------------------------
+
+MIN16 : MACRO
+  ld a, HIGH(\1)
+  sub HIGH(\2)
+  jr c, .end\@
+  jr nz, .swap\@
+  ld a, LOW(\1)
+  sub LOW(\2)
+  jr c, .end\@
+.swap\@
+  LD16 \1, \2
+  jr .end\@
+.end\@:
+ENDM
+
+MAX16 : MACRO
+  ld a, HIGH(\1)
+  sub HIGH(\2)
+  jr c, .swap\@
+  jr nz, .swap\@
+  ld a, LOW(\1)
+  sub LOW(\2)
+  jr nc, .end\@
+.swap\@
+  LD16 \1, \2
+  jr .end\@
+.end\@:
+ENDM
+
 ;-------------------------------------------------------------------------------
 
 ADD_HL_VALUE : MACRO
@@ -188,6 +227,56 @@ ENDM
 LD_A_ADDR_VAL : MACRO
   ld a, \2
   ld [\1], a
+ENDM
+
+LD16 : MACRO
+  ld LOW(\1), LOW(\2)
+  ld HIGH(\1), HIGH(\2)
+ENDM
+
+; ld r16, [a16]
+LD_R16_I_ADDR : MACRO
+  ld a, [\2]
+  ld LOW(\1), a
+  ld a, [\2 + 1]
+  ld HIGH(\1), a
+ENDM
+
+; ld [a16], r16
+LD_I_ADDR_R16 : MACRO
+  ld a, LOW(\2)
+  ld [\1], a
+  ld a, HIGH(\2)
+  ld [\1 + 1], a
+ENDM
+
+LD_IR16_R16 : MACRO
+  ld a, LOW(\2)
+  ld [\1], a
+  inc \1
+  ld a, HIGH(\2)
+  ld [\1], a
+  dec \1
+ENDM
+
+LD_R16_IR16 : MACRO
+  ld a, [\2]
+  ld LOW(\1), a
+  inc \2
+  ld a, [\2]
+  ld LOW(\1), a
+  dec \2
+ENDM
+
+LD_IR16_IR16 : MACRO
+  ld a, [\2]
+  ld [\1], a
+  inc \1
+  inc \2
+  ld a, [\2]
+  ld [\1], a
+  dec \1
+  dec \2
 ENDM
 
 ;-------------------------------------------------------------------------------

@@ -12,13 +12,15 @@ INCLUDE "timing_utils.inc"
 INCLUDE "sram_utils.inc"
 
 window_layer_start EQU _SCRN1
-character_edit_bg EQU window_layer_start + $21
+character_edit_bg EQU window_layer_start + $25
 bg_log_location EQU window_layer_start + $2B ;_SCRN0 + ($20 * $10)
 mode_log_location EQU window_layer_start + $B + ($20 * $2) ; _SCRN0 + ($20 * $11)
-selected_character_window_position EQU window_layer_start + $8B
-cursor_color_window_position EQU window_layer_start + $CB
+selected_character_window_position EQU window_layer_start + $8E
+cursor_color_window_position EQU window_layer_start + $CE
+win_y_offset EQU $0
+win_x_offset EQU $8 * $4
 
-character_list_vram_start EQU vram_start + $22
+character_list_vram_start EQU vram_start + $21
 selected_character_position EQU vram_start + $20 + $12
 
 SECTION "Game code", ROM0
@@ -489,7 +491,7 @@ char_select_mode:
   ld hl, char_select_right_cb
   call ld_ide_hl
 
-  ld de, button_start_f
+  ld de, button_select_f
   ld hl, select_cb
   call ld_ide_hl
 
@@ -570,9 +572,7 @@ char_edit_set_pixel_cb:
         push hl
           ld bc, font_shadow
           add hl, bc
-          LD_A_ADDR_VAL rRAMG, CART_RAM_ENABLE ; enable SRAM read
-          call ld_ihl_de
-          LD_A_ADDR_VAL rRAMG, CART_RAM_DISABLE ; enable SRAM read
+          call ld_sram_ihl_de
         pop hl
         push hl
           ld bc, tileset_start
@@ -609,16 +609,16 @@ char_edit_dec_color_cb:
 
 SECTION "Set char edit mode", ROM0
 char_edit_mode:
-  LD_A_ADDR_VAL cursor_x, $10; $8  ;$10
-  LD_A_ADDR_VAL cursor_y, $18; $10 ;$18
+  LD_A_ADDR_VAL cursor_x, $10 + win_x_offset; $8  ;$10
+  LD_A_ADDR_VAL cursor_y, $18 + win_y_offset; $10 ;$18
 
   LD_A_ADDR_VAL char_edit_color, $0
   LD_A_ADDR_VAL char_edit_column_mask, %10000000
 
-  LD_A_ADDR_VAL mode_minimum_x, min_x
-  LD_A_ADDR_VAL mode_maximum_x, (step_size * $7) + min_x
-  LD_A_ADDR_VAL mode_minimum_y, min_y
-  LD_A_ADDR_VAL mode_maximum_y, (step_size * $7) + min_y
+  LD_A_ADDR_VAL mode_minimum_x, min_x + win_x_offset
+  LD_A_ADDR_VAL mode_maximum_x, (step_size * $7) + min_x + win_x_offset
+  LD_A_ADDR_VAL mode_minimum_y, min_y + win_y_offset
+  LD_A_ADDR_VAL mode_maximum_y, (step_size * $7) + min_y + win_y_offset
 
   LD_A_ADDR_VAL held_mask, (disable_start_held & disable_b_held & disable_a_held)
 
@@ -764,9 +764,9 @@ update_cursor_character:
   ld [selected_character_position], a
   ld a, [cursor_character]
   inc a
-  cp $9
+  cp $6
   jp c, .store_a
-    ld a, $7
+    ld a, $4
 .store_a:
   ld [cursor_character], a
   push hl
@@ -868,7 +868,10 @@ init_font:
   ld a, b
   or c
   ret nz
-  MEMCPY tileset_start, FontTiles, FontTilesEnd - FontTiles
+  ld hl, FontTiles
+  ld de, tileset_start
+  ld bc, FontTilesEnd - FontTiles
+  call memcopy_to_vram
   ;- memset()    d = value    hl = start address    bc = size 
   ld d, 0
   ld bc, $1000 ; tileset size
@@ -914,8 +917,9 @@ final_init:
 
 SECTION "Font", ROM0
 FontTiles:
-INCLUDE "font_redone.inc"
-INCLUDE "font_other.inc"
+INCLUDE "base_tiles.inc"
+;INCLUDE "font_redone.inc"
+;INCLUDE "font_other.inc"
 FontTilesEnd:
 
 ;SECTION "Font shadow", WRAM0
@@ -946,7 +950,7 @@ hello_world:
 
 character_list_box:
 CHAR = $0
-  REPT $12
+  REPT $14
     db $0E
   ENDR
   REPT $10
@@ -961,6 +965,15 @@ CHAR = $0
 CHAR = CHAR + 1
     ENDR
     db $0E
+    IF (CHAR == $10)
+      db " ", $0E
+    ELIF (CHAR == $30)
+      db $12, $0E
+    ELIF (CHAR == $40)
+      db $0D, $0E
+    ELIF (CHAR == $20) || (CHAR == $50)
+      db $0E, $0E
+    ENDC
   ENDR
   db "\n"
   REPT $12
@@ -969,32 +982,59 @@ CHAR = CHAR + 1
   db "\n"
   db $0
 
+LEFT_WINDOW_BUFFER_M : MACRO
+  db "    "
+ENDM
+LEFT_WINDOW_BUFFER EQUS "    "
+
 window_background_str:
+  LEFT_WINDOW_BUFFER_M
   REPT $A
     db $0E
   ENDR
+ROW = 0
   REPT $8
+ROW = ROW + 1
     db "\n"
+    LEFT_WINDOW_BUFFER_M
     db $0E
     REPT $8
       db $20
     ENDR
     db $0E
+    IF (ROW == 1) || (ROW == 3) || (ROW == 5) || (ROW == 7)
+      db $0E,$0E
+    ELIF (ROW == 2)
+      db $12,$0E
+    ELIF (ROW == 4) || (ROW == 6)
+      db " ",$0E
+    ENDC
   ENDR
   db "\n"
+  LEFT_WINDOW_BUFFER_M
   REPT $A
     db $0E
   ENDR
-  db "\n"
+  db "\n\n"
+  LEFT_WINDOW_BUFFER_M
+  db " ",$07," "," "," "," "," "," "," ",$12,"\n"
+  LEFT_WINDOW_BUFFER_M
+  db $06," ",$09," "," "," "," ",$11," ",$0D,"\n"
+  LEFT_WINDOW_BUFFER_M
+  db " ",$08," "," "," "," "," ",$0C," "," ","\n"
+  LEFT_WINDOW_BUFFER_M
+  db " "," "," ",$0F," ",$10," "," "," "," ","\n"
+  LEFT_WINDOW_BUFFER_M
+  db "   ", "\\",$0A," ",$0B," "," "," "," ","\n"
   db $0
 
-button_a_str: db     "A press!      \n", $0
-button_b_str: db     "B press!      \n", $0
-button_sel_str: db   "select press! \n", $0
-button_srt_str: db   "start press!  \n", $0
-button_up_str: db    "up press!     \n", $0
-button_down_str: db  "down press!   \n", $0
-button_left_str: db  "left press!   \n", $0
+button_a_str:     db "A press!      \n", $0
+button_b_str:     db "B press!      \n", $0
+button_sel_str:   db "select press! \n", $0
+button_srt_str:   db "start press!  \n", $0
+button_up_str:    db "up press!     \n", $0
+button_down_str:  db "down press!   \n", $0
+button_left_str:  db "left press!   \n", $0
 button_right_str: db "right press!  \n", $0
 default_mode_str: db "DEFAULT MODE  \n", $0
-edit_mode_str: db    "EDIT          \n", $0
+edit_mode_str:    db $0,"EDIT          \n", $0

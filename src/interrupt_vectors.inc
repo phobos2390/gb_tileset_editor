@@ -54,6 +54,12 @@ ENDR
 ; Interrupt Vectors
 ;-------------------------------------------------------------------------------
 
+vblank_int_flag SET $1
+lcd_int_flag    SET $2
+timer_int_flag  SET $4
+serial_int_flag SET $8
+joypad_int_flag SET $10
+
 SECTION "VBLANK INTERRUPT", ROM0[$40]
 vblank_vector:
   push hl
@@ -148,6 +154,9 @@ timer_f: DS 2
 serial_f: DS 2
 joypad_f: DS 2
 
+SECTION "Callback Flags", WRAM0
+callback_flags: DS 1
+              
 SECTION "Callback Stats", WRAM0
 amount_cb_invoked: DS 2
 

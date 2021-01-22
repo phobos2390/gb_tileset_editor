@@ -44,6 +44,46 @@ memcopy_from_sram:
   LD_A_ADDR_VAL rRAMG, CART_RAM_DISABLE ; disable SRAM read when done
   ret
 
+SECTION "Write word de to ihl in SRAM", ROM0
+ld_sram_ihl_de:
+  PUSH_HL_BC_DE
+    LD_BC_HL
+    LD_HL_DE
+    call ld_sram_ibc_hl
+  POP_HL_BC_DE
+  ret
+
+SECTION "Write word to SRAM section", ROM0
+ld_sram_ibc_hl:
+  LD_A_ADDR_VAL rRAMG, CART_RAM_ENABLE ; enable SRAM write
+  PUSH_BC_DE
+    ld de, _SRAM+$2000
+    SUB16 bc, de
+    jp nc, .out_of_range
+  POP_BC_DE  
+  PUSH_BC_DE
+    ld de, _SRAM+$2
+    SUB16 bc, de
+    jp c, .out_of_range
+  POP_BC_DE  
+  PUSH_HL_BC_DE
+    LD_R16_I_ADDR de, _SRAM
+    SUB16 bc, (_SRAM + $2)
+    MAX16 de, bc
+    INC_DE_W
+    LD_I_ADDR_R16 _SRAM, de
+    jp .end
+.no_resize:
+.end:
+  POP_HL_BC_DE  
+  call ld_ibc_hl
+  LD_A_ADDR_VAL rRAMG, CART_RAM_DISABLE ; disable SRAM write when done
+  ret
+.out_of_range:
+  POP_HL_BC_DE
+  LD_A_ADDR_VAL rRAMG, CART_RAM_DISABLE ; disable SRAM write when done
+  ret
+
 SECTION "copy SRAM fast", ROM0
 memcopy_fast_sram:
   LD_A_ADDR_VAL rRAMG, CART_RAM_ENABLE ; enable SRAM read

@@ -9,6 +9,8 @@
 IF !DEF(MEM_UTILS_INC)
 MEM_UTILS_INC SET 1
 
+INCLUDE "vram_utils.inc"
+
 SECTION "Memset",ROM0
 
 ;-------------------------------------------------------------------------------
@@ -71,8 +73,23 @@ MEMCPY : MACRO
   ld bc, \3
   call memcopy
 ENDM
+    
+SECTION "Memcpy vram verify", ROM0
+memcopy_to_vram:
+    ld      a, [rLY]
+    cp      $90 ; Check if the LCD is past VBlank
+    jr      nc,memcopy_to_vram
+.loop:
+    ld      a,[hl+]
+    ld      [de],a
+    inc     de
+    dec     bc
+    ld      a,b
+    or      a,c
+    jr      nz,memcopy_to_vram.loop
+    ret
 
-SECTION "Memcpy_fast",ROM0
+SECTION "Memcpy_fast", ROM0
 
 ;-------------------------------------------------------------------------------
 ;- memcopy_fast()    b = size    hl = source address    de = dest address      -

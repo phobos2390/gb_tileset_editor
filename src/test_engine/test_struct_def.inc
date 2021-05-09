@@ -92,12 +92,15 @@ SECTION "Run test at hl", ROM0
 run_test_hl:
   push bc
     push de
+      ; test t
+      ; print(t.name)
       ld bc, test_struct.name - test_struct.begin
       push hl
         add hl, bc ; go to test_struct.name
         call ld_hl_ihl ; hl = *hl
         call print_hl
       pop hl
+      ; a = (*t.function)()
       ld bc, test_struct.function - test_struct.begin
       push hl
         add hl, bc ; go to test_struct.function
@@ -111,6 +114,8 @@ run_test_hl:
         pop af
         ld a, l ; return code in hl
       pop hl
+      ; t.ret_code = a
+      ; print(a == 0 ? "failed" : "succeeded")
       ld bc, test_struct.ret_code - test_struct.begin
       push hl
         add hl, bc

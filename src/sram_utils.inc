@@ -68,7 +68,7 @@ ld_sram_ibc_hl:
   POP_BC_DE  
   PUSH_HL_BC_DE
     LD_R16_I_ADDR de, _SRAM
-    SUB16 bc, (_SRAM + $2)
+    SUB16 bc, (_SRAM) ; + $2)
     MAX16 de, bc
     INC_DE_W
     LD_I_ADDR_R16 _SRAM, de
@@ -80,7 +80,7 @@ ld_sram_ibc_hl:
   LD_A_ADDR_VAL rRAMG, CART_RAM_DISABLE ; disable SRAM write when done
   ret
 .out_of_range:
-  POP_HL_BC_DE
+  POP_BC_DE
   LD_A_ADDR_VAL rRAMG, CART_RAM_DISABLE ; disable SRAM write when done
   ret
 

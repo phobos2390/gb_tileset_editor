@@ -92,6 +92,9 @@ main:
 
   call final_init
   ei
+
+  jp main_loop
+
 .lockup
   halt
   jp .lockup

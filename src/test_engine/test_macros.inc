@@ -1,7 +1,0 @@
-IF !DEF(TEST_MACROS_INC)
-TEST_MACROS_INC SET 1
-
-include "mem_utils.inc"
-
-
-ENDC ; TEST_MACROS_INC

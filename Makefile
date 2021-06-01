@@ -2,18 +2,25 @@ NAME := tileset_editor
 TEST_NAME := test_$(NAME)
 MBC_TYPE := 0x1B
 RAM_SIZE := 0x2
+UTILS_DIR := ./gb_asm_utils
+TEST_DIR := ./gb_asm_test
+TEST_ENGINE_DIR := $(TEST_DIR)/src
+TEST_DIRECTORY := ./src/test
+ADDITIONAL_INCLUDES := "-i ./src"
 
 build:
 	@mkdir -p build
-	rgbasm -i src src/*.asm -o build/$(NAME).o 
+	rgbasm -i $(UTILS_DIR)/src -i src src/*.asm -o build/$(NAME).o 
 	rgblink -o build/$(NAME).gb build/$(NAME).o -m build/$(NAME).map -n build/$(NAME).sym
 	rgbfix -m $(MBC_TYPE) -r $(RAM_SIZE) -v -p 0 build/$(NAME).gb
 
 build_test:
-	@mkdir -p build
-	rgbasm -i src -i src/test_engine -i src/test src/test_engine/*.asm -o build/$(TEST_NAME).o 
-	rgblink -o build/$(TEST_NAME).gb build/$(TEST_NAME).o -m build/$(TEST_NAME).map -n build/$(TEST_NAME).sym
-	rgbfix -v -p 0 build/$(TEST_NAME).gb
+	make -f $(TEST_DIR)/Makefile build_test \
+	    ADDITIONAL_INCLUDES=$(ADDITIONAL_INCLUDES) \
+	    NAME=$(NAME) \
+	    TEST_NAME=$(TEST_NAME) \
+	    TEST_ENGINE_DIR=$(TEST_ENGINE_DIR) \
+	    TEST_DIRECTORY=$(TEST_DIRECTORY) 
 
 clean:
 	rm -rf build/

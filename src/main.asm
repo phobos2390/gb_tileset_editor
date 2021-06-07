@@ -35,12 +35,6 @@ main:
 
   PRINT_ADDR_U character_list_box
 
-;  ld de, character_list_vram_start
-;  ld bc, vram_iterator
-;  call ld_ibc_de
-
-;  PRINT_ADDR_U whole_tileset
-
   ld hl, window_background_str
   ld bc, window_layer_start
   call put_string_hl_at_bc_in_vblank
@@ -51,11 +45,6 @@ main:
   ld de, timing_table_cb
   call int_set_timer_de
   
-;  ld hl, vblank_cb
-;  ld bc, $0 ; null context
-;  ld de, 1 ; update every tick
-;  call add_timing_table_entry_callback
-
   ld hl, timer_cb
   ld bc, $0 ; null context
   ld de, 1 ; update every tick

@@ -60,10 +60,14 @@ main:
   ld de, $8
   call add_timing_table_entry_callback;add_vblank_enabled_timing_table_entry_callback  
 
-  ld hl, dma_update_sprites
-  ld bc, $0 ; null context
-  ld de, 1 ; update every tick
-  call add_timing_table_entry_callback
+  ld hl, vblank_functions
+  ld bc, vblank_f
+  call ld_ibc_hl
+
+  ;ld hl, dma_update_sprites
+  ;ld bc, $0 ; null context
+  ;ld de, 1 ; update every tick
+  ;call add_timing_table_entry_callback
 
   ;ld de, read_joypad
   ;call int_set_joypad_de
@@ -238,13 +242,20 @@ select_cb:
 
 SECTION "Timer callback", ROM0
 timer_cb:
-  call joypad_cb
-  call update_selected_character
+  ;call joypad_cb
+  ;call update_selected_character
   ;call increment_timer_cb
+  call joypad_cb
   ret
 
 SECTION "Joypad callback stats", WRAM0
 joypad_cb_amount_invoked: DS 2
+
+SECTION "VBlank callback", ROM0
+vblank_functions:
+  call dma_update_sprites
+  call update_selected_character
+  ret
 
 SECTION "Joypad callback", ROM0
 joypad_cb:
@@ -537,14 +548,14 @@ char_edit_set_pixel_cb:
       ld c, a
 
       ld a, [char_edit_color]
-      and %00000010
+      and %00000001
       jp z, .not_c
         ld a, [char_edit_column_mask]
         or c
         ld c, a
 .not_c:
       ld a, [char_edit_color]
-      and %00000001
+      and %00000010
       jp z, .not_b
         ld a, [char_edit_column_mask]
         or b
@@ -687,11 +698,11 @@ row_data_bc_col_d_to_e_color:
   and b
   jp z, .b_0
     inc e
+    inc e
 .b_0:
   ld a, d
   and c
   jp z, .c_0
-    inc e
     inc e
 .c_0:
   ret

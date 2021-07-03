@@ -7,12 +7,13 @@ TEST_DIR := ./gb_asm_test
 TEST_ENGINE_DIR := $(TEST_DIR)/src
 TEST_DIRECTORY := ./src/test
 ADDITIONAL_INCLUDES := "-i ./src"
+EMULATOR := sameboy
 
 build:
 	@mkdir -p build
 	rgbasm -i $(UTILS_DIR)/src -i src src/*.asm -o build/$(NAME).o 
 	rgblink -o build/$(NAME).gb build/$(NAME).o -m build/$(NAME).map -n build/$(NAME).sym
-	rgbfix -m $(MBC_TYPE) -r $(RAM_SIZE) -v -p 0 build/$(NAME).gb
+	rgbfix -c -m $(MBC_TYPE) -r $(RAM_SIZE) -v -p 0 build/$(NAME).gb
 
 build_test:
 	make -f $(TEST_DIR)/Makefile build_test \
@@ -29,7 +30,7 @@ test: build_test
 	sameboy_debugger build/$(TEST_NAME).gb
 
 run: build
-	sameboy build/$(NAME).gb
+	$(EMULATOR) build/$(NAME).gb
 
 debug: build
 	sameboy_debugger build/$(NAME).gb

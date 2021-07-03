@@ -10,6 +10,7 @@ INCLUDE "joypad_eval.inc"
 INCLUDE "oam_utils.inc"
 INCLUDE "timing_utils.inc"
 INCLUDE "sram_utils.inc"
+INCLUDE "model_number_util.inc"
 
 window_layer_start EQU _SCRN1
 character_edit_bg EQU window_layer_start + $25
@@ -25,6 +26,7 @@ selected_character_position EQU vram_start + $20 + $12
 
 SECTION "Game code", ROM0
 main:
+  ld [GB_model_number], a
   call init_display
   call init_font
   call init_window
@@ -43,7 +45,18 @@ main:
   call init_callbacks
 
   ld de, timing_table_cb
-  call int_set_timer_de
+  ld hl, vblank_f
+  call ld_ihl_de
+
+  ld hl, dma_update_sprites
+  ld bc, $0
+  ld de, $1
+  call add_timing_table_entry_callback
+  
+  ld hl, update_selected_character
+  ld bc, $0
+  ld de, $1
+  call add_timing_table_entry_callback
   
   ld hl, timer_cb
   ld bc, $0 ; null context
@@ -57,12 +70,13 @@ main:
 
   ld hl, update_cursor_character
   ld bc, $0
-  ld de, $8
-  call add_timing_table_entry_callback;add_vblank_enabled_timing_table_entry_callback  
+  ld de, $40
+  call add_timing_table_entry_callback
 
-  ld hl, vblank_functions
-  ld bc, vblank_f
-  call ld_ibc_hl
+
+  ;ld hl, vblank_functions
+  ;ld bc, vblank_f
+  ;call ld_ibc_hl
 
   ;ld hl, dma_update_sprites
   ;ld bc, $0 ; null context
@@ -842,7 +856,7 @@ init_set_cursor:
     LD_HL_struct_K sprite, 0
     ld bc, $2020  ; x - 1
                   ; y - 1
-    ld de, $0700 ; character - 0x4
+    ld de, $0400 ; character - 0x4
                  ; flag - %00000000
     call set_sprite_at_hl
     call dma_update_sprites
@@ -885,6 +899,63 @@ init_font:
 
   ret
 
+
+SECTION "Sprite pallete", ROM0
+regular_pallete:
+DW %0111111111111111
+DW %0000011111100000
+DW %0111110000000000
+DW %0000000000000000
+
+SECTION "set OAM sprite pallete", ROM0
+init_sprite_pallete:
+  ld a, [GB_model_number]
+  cp $1
+  ret z
+
+  ld a, %10000000
+  ld [rOCPS], a
+
+  ld c, LOW(rOCPD)
+
+  call init_sprite_pallete.subroutine
+  xor a
+  ld [rOCPS], a
+
+  ld a, %10000000
+  ld [rBCPS], a
+
+  ld c, LOW(rBCPD)
+  call init_sprite_pallete.subroutine
+  xor a
+  ld [rBCPS], a
+
+  ret
+
+.subroutine:
+  ld b, $8
+.loop:
+  ld hl, regular_pallete
+  ld a, [hl+]
+  ldh [c], a
+  ld a, [hl+]
+  ldh [c], a
+  ld a, [hl+]
+  ldh [c], a
+  ld a, [hl+]
+  ldh [c], a
+  ld a, [hl+]
+  ldh [c], a
+  ld a, [hl+]
+  ldh [c], a
+  ld a, [hl+]
+  ldh [c], a
+  ld a, [hl]
+  ldh [c], a
+  dec b
+  jr nz, .loop
+  ret
+
 SECTION "Finalize initialization", ROM0
 final_init:
   ; Init display registers
@@ -893,6 +964,8 @@ final_init:
   ld [rOBP0], a
   ld [rOBP1], a
 
+  call init_sprite_pallete
+  
   xor a ; ld a, 0
   ld [rSCY], a
   ld [rSCX], a

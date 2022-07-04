@@ -1,6 +1,6 @@
 ; src/constants.inc
 IF !DEF(CONSTANTS_INC)
-CONSTANTS_INC SET 1
+CONSTANTS_INC=1
 
 INCLUDE "hardware.inc"
 

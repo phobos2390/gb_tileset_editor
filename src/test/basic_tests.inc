@@ -1,5 +1,5 @@
 IF !DEF(BASIC_TESTS_INC)
-BASIC_TESTS_INC SET 1
+BASIC_TESTS_INC=1
 
 SECTION "basic_tests", ROM0
 basic_test:  

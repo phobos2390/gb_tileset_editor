@@ -1,5 +1,5 @@
 IF !DEF(TEST_LIST_INC)
-TEST_LIST_INC SET 1
+TEST_LIST_INC=1
 
 INCLUDE "basic_tests.inc"
 INCLUDE "half_hex_digit_tests.inc"
